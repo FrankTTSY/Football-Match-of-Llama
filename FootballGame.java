@@ -74,8 +74,8 @@ public class FootballGame extends JPanel implements ActionListener, KeyListener 
     private void loadImages() {
         //photo
         try {
-            llamaBlueImage = ImageIO.read(new File("photo/Llama_blue.png"));
-            llamaRedImage = ImageIO.read(new File("photo/Llama_red.png"));
+            llamaBlueImage = ImageIO.read(new File("photo/Llama_red.png"));
+            llamaRedImage = ImageIO.read(new File("photo/Llama_blue.png"));
             menuBgImage = ImageIO.read(new File("photo/menu_bg.jpg"));
             btnVsBotImg = ImageIO.read(new File("photo/btn_1player.png"));
             btnVsPlayerImg = ImageIO.read(new File("photo/btn_2players.png"));
@@ -179,11 +179,11 @@ public class FootballGame extends JPanel implements ActionListener, KeyListener 
 
         // Scoreboard
         g.setFont(pixelFontLarge);
-        g.setColor(Color.BLUE);
+        g.setColor(Color.RED);
         g.drawString(String.valueOf(score1), WIDTH / 2 - 50, 50);
         g.setColor(Color.BLACK);
         g.drawString("-", WIDTH / 2, 50);
-        g.setColor(Color.RED);
+        g.setColor(Color.BLUE);
         g.drawString(String.valueOf(score2), WIDTH / 2 + 50, 50);
 
         // Game Over Screen
@@ -193,7 +193,7 @@ public class FootballGame extends JPanel implements ActionListener, KeyListener 
 
             g.setFont(pixelFontLarge);
             g.setColor(Color.YELLOW);
-            String winText = (score1 >= 5) ? "PLAYER 1 WINS!" : (isTwoPlayer ? "PLAYER 2 WINS!" : "BOT WINS!");
+            String winText = (score1 >= 5) ? "RED WINS!" : (isTwoPlayer ? "BLUE WINS!" : "BOT WINS!");
             int textWidth = g.getFontMetrics().stringWidth(winText);
             g.drawString(winText, (WIDTH - textWidth) / 2, HEIGHT / 2 - 20);
 
