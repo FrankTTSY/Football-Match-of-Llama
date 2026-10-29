@@ -2,82 +2,49 @@ import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
-import java.io.File;
 import java.awt.image.BufferedImage;
+import java.io.File;
 import java.io.IOException;
 
-// Main Class: FootballGame (Extends JPanel, Implements ActionListener, KeyListener)
+// 1. MAIN CLASS: FootballGame
 
 public class FootballGame extends JPanel implements ActionListener, KeyListener {
 
-    // 1. Field Declarations
-    
-    // Screen configuration
     private final int WIDTH = 1000;
     private final int HEIGHT = 500;
     private Timer timer;
 
-    // Game States
-    private boolean isMenu = true;       
+    private boolean isMenu = true;          
     private boolean isTwoPlayer = false; 
     private boolean isGameOver = false;  
 
-    // Pixel Fonts
     private Font pixelFontLarge;
-    private Font pixelFontMedium;
     private Font pixelFontSmall;
 
-    // Physics
     private double gravity = 0.5;      
     private double bounce = 0.75;      
     private double jumpPower = -12.0;  
     private int groundY = HEIGHT - 50; 
 
-    // Player 1 
-    private int p1x = 100, p1y = 0;
-    private double p1dy = 0; 
-    private int p1Width = 50, p1Height = 75;
-    private int playerSpeed = 5;
+    // Game Objects
+    private Player player1;
+    private Player player2;
+    private Ball ball;
+    private Goal leftGoal;
+    private Goal rightGoal;
+
     private boolean w, a, d;
-    private boolean isP1Grounded = false;
-    private boolean p1FacingLeft = false; // P1 facing direction (false = right, true = left)
-    private int score1 = 0;
-    private BufferedImage llamaBlueImage; 
-
-    // Player 2 / Bot
-    private int p2x = 350, p2y = 0; 
-    private double p2dy = 0; 
-    private int p2Width = 50, p2Height = 75; 
-    private int botSpeed = 5;
     private boolean up, left, right; 
-    private boolean isP2Grounded = false;
-    private boolean p2FacingLeft = true; // P2 facing direction
+    private int score1 = 0;
     private int score2 = 0;
-    private BufferedImage llamaRedImage; 
 
-    // Images for backgrounds, menu buttons, and ball
-    private BufferedImage menuBgImage;
-    private BufferedImage btnVsBotImg;
-    private BufferedImage btnVsPlayerImg;
-    private BufferedImage ballImage;
-    private BufferedImage gameBgImage;
+    // Images
+    private BufferedImage llamaBlueImage, llamaRedImage;
+    private BufferedImage menuBgImage, btnVsBotImg, btnVsPlayerImg, ballImage, gameBgImage;
 
-    // Ball and rotation
-    private double bx = WIDTH / 2, by = 100;
-    private int ballSize = 30;
-    private double bdx = 0, bdy = 0;
-    private double friction = 1;
-    private double ballAngle = 0; 
-
-    // Goals
-    private int goalWidth = 40, goalHeight = 160;
-    private int goalY = groundY - goalHeight;
-
-    // Menu buttons
+    // Menu Buttons
     private JButton btnVsBot;
     private JButton btnVsPlayer;
-
-    // 2. Constructor
 
     public FootballGame() {
         setPreferredSize(new Dimension(WIDTH, HEIGHT));
@@ -87,7 +54,25 @@ public class FootballGame extends JPanel implements ActionListener, KeyListener 
         addKeyListener(this);
         
         initPixelFonts();
+        loadImages();
 
+        //player ball goal
+        player1 = new Player(100, groundY - 75, 50, 75, false, llamaBlueImage, Color.BLUE);
+        player2 = new Player(WIDTH - 150, groundY - 75, 50, 75, true, llamaRedImage, Color.RED);
+        ball = new Ball(WIDTH / 2.0 - 15, 100, 30, ballImage);
+        
+        leftGoal = new Goal(0, groundY - 160, 40, 160, true);
+        rightGoal = new Goal(WIDTH - 40, groundY - 160, 40, 160, false);
+
+        initMenuButtons();
+        resetGame(); 
+
+        timer = new Timer(16, this); 
+        timer.start();
+    }
+
+    private void loadImages() {
+        //photo
         try {
             llamaBlueImage = ImageIO.read(new File("photo/Llama_blue.png"));
             llamaRedImage = ImageIO.read(new File("photo/Llama_red.png"));
@@ -100,19 +85,10 @@ public class FootballGame extends JPanel implements ActionListener, KeyListener 
             e.printStackTrace();
             System.out.println("Could not load some images. Please check paths in the photo/ folder.");
         }
-
-        initMenuButtons();
-        resetGame(); 
-
-        timer = new Timer(16, this); 
-        timer.start();
     }
-
-    // 3. Fonts and Menu Buttons Setup
 
     private void initPixelFonts() {
         pixelFontLarge = new Font("Monospaced", Font.BOLD, 60);
-        pixelFontMedium = new Font("Monospaced", Font.BOLD, 40);
         pixelFontSmall = new Font("Monospaced", Font.BOLD, 20);
     }
 
@@ -124,23 +100,17 @@ public class FootballGame extends JPanel implements ActionListener, KeyListener 
         int btnHeight = 50;
 
         if (btnVsBotImg != null) {
-            Image scaledImg = btnVsBotImg.getScaledInstance(btnWidth, btnHeight, Image.SCALE_SMOOTH);
-            btnVsBot.setIcon(new ImageIcon(scaledImg));
+            btnVsBot.setIcon(new ImageIcon(btnVsBotImg.getScaledInstance(btnWidth, btnHeight, Image.SCALE_SMOOTH)));
         } else {
             btnVsBot.setText("1 PLAYER");
             btnVsBot.setFont(pixelFontSmall);
-            btnVsBot.setBackground(new Color(50, 150, 250));
-            btnVsBot.setForeground(Color.WHITE);
         }
 
         if (btnVsPlayerImg != null) {
-            Image scaledImg = btnVsPlayerImg.getScaledInstance(btnWidth + 5, btnHeight, Image.SCALE_SMOOTH);
-            btnVsPlayer.setIcon(new ImageIcon(scaledImg));
+            btnVsPlayer.setIcon(new ImageIcon(btnVsPlayerImg.getScaledInstance(btnWidth + 5, btnHeight, Image.SCALE_SMOOTH)));
         } else {
             btnVsPlayer.setText("2 PLAYERS");
             btnVsPlayer.setFont(pixelFontSmall);
-            btnVsPlayer.setBackground(new Color(250, 80, 80));
-            btnVsPlayer.setForeground(Color.WHITE);
         }
 
         styleButtonAsImage(btnVsBot);
@@ -172,18 +142,14 @@ public class FootballGame extends JPanel implements ActionListener, KeyListener 
         resetGame();
     }
 
-    // 4. Rendering and Graphics
-
     @Override
     public void paintComponent(Graphics g) {
         super.paintComponent(g);
-        Graphics2D g2d = (Graphics2D) g;
-        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF); 
+        Graphics2D g2 = (Graphics2D) g;
 
-        // --- Main Menu Screen ---
         if (isMenu) {
             if (menuBgImage != null) {
-                g2d.drawImage(menuBgImage, 0, 0, WIDTH, HEIGHT, null);
+                g2.drawImage(menuBgImage, 0, 0, WIDTH, HEIGHT, null);
             } else {
                 g.setColor(new Color(20, 30, 60));
                 g.fillRect(0, 0, WIDTH, HEIGHT);
@@ -191,9 +157,8 @@ public class FootballGame extends JPanel implements ActionListener, KeyListener 
             return; 
         }
 
-        // Gameplay Screen
         if (gameBgImage != null) {
-            g2d.drawImage(gameBgImage, 0, 0, WIDTH, HEIGHT, null);
+            g2.drawImage(gameBgImage, 0, 0, WIDTH, HEIGHT, null);
         } else {
             g.setColor(new Color(135, 206, 235));
             g.fillRect(0, 0, WIDTH, HEIGHT);
@@ -203,44 +168,22 @@ public class FootballGame extends JPanel implements ActionListener, KeyListener 
         g.setColor(new Color(62, 39, 35)); 
         g.fillRect(0, groundY, WIDTH, HEIGHT - groundY);
 
-        // Left Goal
-        g.setColor(new Color(200, 200, 200, 150)); 
-        g.fillRect(0, goalY, goalWidth, goalHeight);
-        g.setColor(Color.WHITE);
-        g.fillRect(goalWidth, goalY, 5, goalHeight); 
-        g.fillRect(0, goalY, goalWidth, 5); 
+        // Draw Goals
+        leftGoal.draw(g);
+        rightGoal.draw(g);
 
-        // Right Goal
-        g.setColor(new Color(200, 200, 200, 150));
-        g.fillRect(WIDTH - goalWidth, goalY, goalWidth, goalHeight);
-        g.setColor(Color.WHITE);
-        g.fillRect(WIDTH - goalWidth - 5, goalY, 5, goalHeight); 
-        g.fillRect(WIDTH - goalWidth, goalY, goalWidth, 5); 
-
-        // Draw Player 1
-        drawLlama(g2d, llamaBlueImage, p1x, p1y, p1Width, p1Height, p1FacingLeft, Color.BLUE);
-
-        // Draw Player 2 / Bot
-        drawLlama(g2d, llamaRedImage, p2x, p2y, p2Width, p2Height, p2FacingLeft, Color.RED);
-
-        // Draw Ball with Rotation
-        if (ballImage != null) {
-            Graphics2D gBall = (Graphics2D) g2d.create();
-            gBall.rotate(ballAngle, bx + ballSize / 2.0, by + ballSize / 2.0);
-            gBall.drawImage(ballImage, (int) bx, (int) by, ballSize, ballSize, null);
-            gBall.dispose();
-        } else {
-            g.setColor(Color.WHITE);
-            g.fillOval((int) bx, (int) by, ballSize, ballSize);
-        }
+        // Draw Players & Ball
+        player1.draw(g2);
+        player2.draw(g2);
+        ball.draw(g2);
 
         // Scoreboard
         g.setFont(pixelFontLarge);
-        g.setColor(Color.blue);
+        g.setColor(Color.BLUE);
         g.drawString(String.valueOf(score1), WIDTH / 2 - 50, 50);
-        g.setColor(Color.black);
+        g.setColor(Color.BLACK);
         g.drawString("-", WIDTH / 2, 50);
-        g.setColor(Color.red);
+        g.setColor(Color.RED);
         g.drawString(String.valueOf(score2), WIDTH / 2 + 50, 50);
 
         // Game Over Screen
@@ -250,10 +193,8 @@ public class FootballGame extends JPanel implements ActionListener, KeyListener 
 
             g.setFont(pixelFontLarge);
             g.setColor(Color.YELLOW);
-            
             String winText = (score1 >= 5) ? "PLAYER 1 WINS!" : (isTwoPlayer ? "PLAYER 2 WINS!" : "BOT WINS!");
-            FontMetrics fm = g.getFontMetrics();
-            int textWidth = fm.stringWidth(winText);
+            int textWidth = g.getFontMetrics().stringWidth(winText);
             g.drawString(winText, (WIDTH - textWidth) / 2, HEIGHT / 2 - 20);
 
             g.setFont(pixelFontSmall);
@@ -264,21 +205,6 @@ public class FootballGame extends JPanel implements ActionListener, KeyListener 
         }
     }
 
-    private void drawLlama(Graphics2D g2d, BufferedImage img, int x, int y, int width, int height, boolean facingLeft, Color fallbackColor) {
-        if (img != null) {
-            if (facingLeft) {
-                g2d.drawImage(img, x + width, y, -width, height, null);
-            } else {
-                g2d.drawImage(img, x, y, width, height, null);
-            }
-        } else {
-            g2d.setColor(fallbackColor);
-            g2d.fillRect(x, y, width, height);
-        }
-    }
-
-    // 5. Game Loop and Physics
-
     @Override
     public void actionPerformed(ActionEvent e) {
         if (isMenu || isGameOver) return; 
@@ -287,224 +213,89 @@ public class FootballGame extends JPanel implements ActionListener, KeyListener 
         if (isTwoPlayer) {
             movePlayer2(); 
         } else {
-            moveBot();     
+            moveBot();    
         }
-        moveBall();
+        
+        ball.update(gravity, 1);
+        ball.checkBoundary(WIDTH, groundY, bounce);
+        
         checkCollisions();
         checkGoals();
         repaint(); 
     }
 
     private void movePlayer1() {
-        if (a) {
-            p1x -= playerSpeed;
-            p1FacingLeft = true; 
-        }
-        if (d) {
-            p1x += playerSpeed;
-            p1FacingLeft = false; 
-        }
-
-        if (w && isP1Grounded) {
-            p1dy = jumpPower;
-            isP1Grounded = false;
-        }
-
-        p1dy += gravity;
-        p1y += (int) p1dy;
-
-        if (p1y >= groundY - p1Height) {
-            p1y = groundY - p1Height;
-            p1dy = 0;
-            isP1Grounded = true;
-        }
-
-        p1x = Math.max(0, Math.min(p1x, WIDTH - p1Width));
+        if (a) player1.moveLeft();
+        if (d) player1.moveRight();
+        if (w) player1.jump(jumpPower);
+        player1.update(gravity, jumpPower, groundY, WIDTH);
     }
 
     private void movePlayer2() {
-        if (left) {
-            p2x -= playerSpeed;
-            p2FacingLeft = true; 
-        }
-        if (right) {
-            p2x += playerSpeed;
-            p2FacingLeft = false; 
-        }
-
-        if (up && isP2Grounded) {
-            p2dy = jumpPower;
-            isP2Grounded = false;
-        }
-
-        p2dy += gravity;
-        p2y += (int) p2dy;
-
-        if (p2y >= groundY - p2Height) {
-            p2y = groundY - p2Height;
-            p2dy = 0;
-            isP2Grounded = true;
-        }
-
-        p2x = Math.max(0, Math.min(p2x, WIDTH - p2Width));
+        if (left) player2.moveLeft();
+        if (right) player2.moveRight();
+        if (up) player2.jump(jumpPower);
+        player2.update(gravity, jumpPower, groundY, WIDTH);
     }
 
     private void moveBot() {
         double targetX;
+        int botSpeed = 5;
 
-        if (bx < WIDTH / 2-450) {
+        if (ball.getX() < WIDTH / 2 - 450) {
             targetX = WIDTH - 250; 
         } else {
-            if (bx > p2x + 10) {
-                targetX = bx + 50;
-            } else {
-                targetX = bx;
-            }
+            targetX = (ball.getX() > player2.getX() + 10) ? ball.getX() + 50 : ball.getX();
         }
 
-        if (p2x < targetX - botSpeed) {
-            p2x += botSpeed+1.5;
-            p2FacingLeft = false; 
-        } else if (p2x > targetX + botSpeed) {
-            p2x -= botSpeed;
-            p2FacingLeft = true; 
+        if (player2.getX() < targetX - botSpeed) {
+            player2.moveRight();
+            player2.setFacingLeft(false);
+        } else if (player2.getX() > targetX + botSpeed) {
+            player2.moveLeft();
+            player2.setFacingLeft(true);
         }
 
-        if (by < p2y && Math.abs(p2x - bx) < 70 && isP2Grounded) {
-            p2dy = jumpPower-1;
-            isP2Grounded = false;
+        if (ball.getY() < player2.getY() && Math.abs(player2.getX() - ball.getX()) < 70 && player2.isGrounded()) {
+            player2.jump(jumpPower - 1);
         }
 
-        p2dy += gravity;
-        p2y += (int) p2dy;
-
-        if (p2y >= groundY - p2Height) {
-            p2y = groundY - p2Height;
-            p2dy = 0;
-            isP2Grounded = true;
-        }
-
-        p2x = Math.max(0, Math.min(p2x, WIDTH - p2Width));
+        player2.update(gravity, jumpPower, groundY, WIDTH);
     }
-
-    private void moveBall() {
-        bdy += gravity;
-        bx += bdx;
-        by += bdy;
-        bdx *= friction;
-
-        ballAngle += bdx / (ballSize / 2.0);
-
-    }
-
-    // 6. Collisions, Kicking, and Goal Detection
-  
 
     private void checkCollisions() {
-        // --- การชนขอบสนาม ---
-        if (by >= groundY - ballSize) {
-            by = groundY - ballSize;
-            bdy = -bdy * bounce;
-            bdx *= 0.95;
+        if (ball.getBounds().intersects(player1.getBounds())) {
+            ball.resolveCollision(player1, bounce);
         }
-        
-        if (by <= 0) {
-            by = 0;
-            bdy = -bdy * bounce;
+        if (ball.getBounds().intersects(player2.getBounds())) {
+            ball.resolveCollision(player2, bounce);
         }
-        
-        if (bx <= 0) {
-            bx = 0;
-            bdx = -bdx * bounce;
-        }
-        if (bx >= WIDTH - ballSize) {
-            bx = WIDTH - ballSize;
-            bdx = -bdx * bounce;
-        }
-
-        Rectangle ballRect = new Rectangle((int) bx, (int) by, ballSize, ballSize);
-        Rectangle p1Rect = new Rectangle(p1x, p1y, p1Width, p1Height);
-        if (ballRect.intersects(p1Rect)) {
-            resolvePlayerBallCollision(p1x, p1y, p1Width, p1Height);
-        }
-
-        ballRect = new Rectangle((int) bx, (int) by, ballSize, ballSize);
-        Rectangle p2Rect = new Rectangle(p2x, p2y, p2Width, p2Height);
-        if (ballRect.intersects(p2Rect)) {
-            resolvePlayerBallCollision(p2x, p2y, p2Width, p2Height);
-        }
-    }
-
-    private void resolvePlayerBallCollision(int px, int py, int pWidth, int pHeight) {
-        double ballCenterX = bx + ballSize / 2.0;
-        double ballCenterY = by + ballSize / 2.0;
-        double playerCenterX = px + pWidth / 2.0;
-        double playerCenterY = py + pHeight / 2.0;
-
-        double dx = ballCenterX - playerCenterX;
-        double dy = ballCenterY - playerCenterY;
-
-        if (dx == 0 && dy == 0) {
-            dx = 1;
-            dy = -1;
-        }
-
-        double distance = Math.sqrt(dx * dx + dy * dy);
-        
-        double kickPower = 13.0;
-
-        double normX = dx / distance;
-        double normY = dy / distance;
-
-        double minOverlap = (ballSize / 2.0) + (pWidth / 2.0);
-        if (distance < minOverlap) {
-            double overlap = minOverlap - distance;
-            bx += normX * overlap;
-            by += normY * overlap;
-        }
-
-        bdx = normX * kickPower;
-        bdy = normY * kickPower;
-
-        bdy -= 2.5;
     }
 
     private void checkGoals() {
-        if (bx <= goalWidth && by >= goalY) {
+        if (leftGoal.checkGoal(ball)) {
             score2++;
-            if (score2 >= 5) {
-                isGameOver = true;
-                repaint();
-            } else {
-                resetGame();
-            }
+            handleGoal();
         }
-        if (bx >= WIDTH - goalWidth - ballSize && by >= goalY) {
+        if (rightGoal.checkGoal(ball)) {
             score1++;
-            if (score1 >= 5) {
-                isGameOver = true;
-                repaint();
-            } else {
-                resetGame();
-            }
+            handleGoal();
         }
     }
 
-
-    // 7. Reset and Event Handling
+    private void handleGoal() {
+        if (score1 >= 5 || score2 >= 5) {
+            isGameOver = true;
+            repaint();
+        } else {
+            resetGame();
+        }
+    }
 
     private void resetGame() {
-        p1x = 100; p1y = groundY - p1Height;
-        p2x = WIDTH - 100 - p2Width; p2y = groundY - p2Height; 
-        p1dy = 0; p2dy = 0;
-        
-        p1FacingLeft = false;
-        p2FacingLeft = true;
-        
-        bx = (WIDTH / 2.0) - (ballSize / 2.0); 
-        by = 50; 
-        bdx = 0; bdy = 0;
-        ballAngle = 0; 
+        player1.reset(100, groundY - 75, false);
+        player2.reset(WIDTH - 150, groundY - 75, true);
+        ball.reset((WIDTH / 2.0) - (ball.width / 2.0), 50);
     }
 
     private void restartFullGame() {
@@ -552,8 +343,6 @@ public class FootballGame extends JPanel implements ActionListener, KeyListener 
 
     @Override public void keyTyped(KeyEvent e) {}
 
-    // 8. Main Method
-
     public static void main(String[] args) {
         JFrame frame = new JFrame("Football Match of Llama");
         FootballGame game = new FootballGame();
@@ -563,5 +352,237 @@ public class FootballGame extends JPanel implements ActionListener, KeyListener 
         frame.setResizable(false);
         frame.setLocationRelativeTo(null);
         frame.setVisible(true);
+    }
+}
+
+// 2. ABSTRACT CLASS: GameObject
+
+abstract class GameObject {
+    protected double x, y;
+    protected int width, height;
+
+    public GameObject(double x, double y, int width, int height) {
+        this.x = x;
+        this.y = y;
+        this.width = width;
+        this.height = height;
+    }
+
+    public Rectangle getBounds() {
+        return new Rectangle((int) x, (int) y, width, height);
+    }
+
+    public double getX() { return x; }
+    public double getY() { return y; }
+    public int getWidth() { return width; }
+    public int getHeight() { return height; }
+}
+
+// 3. CLASS: Player
+
+class Player extends GameObject {
+    private double dy = 0;
+    private int speed = 5;
+    private boolean isGrounded = false;
+    private boolean facingLeft = false;
+    private BufferedImage image;
+    private Color fallbackColor;
+
+    public Player(double x, double y, int width, int height, boolean facingLeft, BufferedImage image, Color fallbackColor) {
+        super(x, y, width, height);
+        this.facingLeft = facingLeft;
+        this.image = image;
+        this.fallbackColor = fallbackColor;
+    }
+
+    public void update(double gravity, double jumpPower, int groundY, int screenWidth) {
+        dy += gravity;
+        y += (int) dy;
+
+        if (y >= groundY - height) {
+            y = groundY - height;
+            dy = 0;
+            isGrounded = true;
+        }
+
+        x = Math.max(0, Math.min(x, screenWidth - width));
+    }
+
+    public void moveLeft() {
+        x -= speed;
+        facingLeft = true;
+    }
+
+    public void moveRight() {
+        x += speed;
+        facingLeft = false;
+    }
+
+    public void jump(double jumpPower) {
+        if (isGrounded) {
+            dy = jumpPower;
+            isGrounded = false;
+        }
+    }
+
+    public void draw(Graphics2D g2) {
+        if (image != null) {
+            if (facingLeft) {
+                g2.drawImage(image, (int) x + width, (int) y, -width, height, null);
+            } else {
+                g2.drawImage(image, (int) x, (int) y, width, height, null);
+            }
+        } else {
+            g2.setColor(fallbackColor);
+            g2.fillRect((int) x, (int) y, width, height);
+        }
+    }
+
+    public void reset(double startX, double startY, boolean defaultFacingLeft) {
+        this.x = startX;
+        this.y = startY;
+        this.dy = 0;
+        this.facingLeft = defaultFacingLeft;
+        this.isGrounded = false;
+    }
+
+    public double getDy() { return dy; }
+    public void setDy(double dy) { this.dy = dy; }
+    public boolean isGrounded() { return isGrounded; }
+    public void setGrounded(boolean grounded) { isGrounded = grounded; }
+    public boolean isFacingLeft() { return facingLeft; }
+    public void setFacingLeft(boolean facingLeft) { this.facingLeft = facingLeft; }
+    public void setX(double x) { this.x = x; }
+    public void setY(double y) { this.y = y; }
+}
+
+// 4. CLASS: Ball
+
+class Ball extends GameObject {
+    private double bdx = 0, bdy = 0;
+    private double ballAngle = 0;
+    private BufferedImage image;
+
+    public Ball(double x, double y, int size, BufferedImage image) {
+        super(x, y, size, size);
+        this.image = image;
+    }
+
+    public void update(double gravity, double friction) {
+        bdy += gravity;
+        x += bdx;
+        y += bdy;
+        bdx *= friction;
+
+        ballAngle += bdx / (width / 2.0);
+    }
+
+    public void checkBoundary(int screenWidth, int groundY, double bounce) {
+        if (y >= groundY - height) {
+            y = groundY - height;
+            bdy = -bdy * bounce;
+            bdx *= 0.95;
+        }
+        if (y <= 0) {
+            y = 0;
+            bdy = -bdy * bounce;
+        }
+        if (x <= 0) {
+            x = 0;
+            bdx = -bdx * bounce;
+        }
+        if (x >= screenWidth - width) {
+            x = screenWidth - width;
+            bdx = -bdx * bounce;
+        }
+    }
+
+    public void resolveCollision(Player p, double bounce) {
+        double ballCenterX = x + width / 2.0;
+        double ballCenterY = y + height / 2.0;
+        double playerCenterX = p.getX() + p.width / 2.0;
+        double playerCenterY = p.getY() + p.height / 2.0;
+
+        double dx = ballCenterX - playerCenterX;
+        double dy = ballCenterY - playerCenterY;
+
+        if (dx == 0 && dy == 0) {
+            dx = 1;
+            dy = -1;
+        }
+
+        double distance = Math.sqrt(dx * dx + dy * dy);
+        double kickPower = 11.0;
+
+        double normX = dx / distance;
+        double normY = dy / distance;
+
+        double minOverlap = (width / 2.0) + (p.width / 2.0);
+        if (distance < minOverlap) {
+            double overlap = minOverlap - distance;
+            x += normX * overlap;
+            y += normY * overlap;
+        }
+
+        bdx = normX * kickPower;
+        bdy = normY * kickPower;
+        bdy -= 2.5;
+    }
+
+    public void draw(Graphics2D g2) {
+        if (image != null) {
+            Graphics2D gBall = (Graphics2D) g2.create();
+            gBall.rotate(ballAngle, x + width / 2.0, y + height / 2.0);
+            gBall.drawImage(image, (int) x, (int) y, width, height, null);
+            gBall.dispose();
+        } else {
+            g2.setColor(Color.WHITE);
+            g2.fillOval((int) x, (int) y, width, height);
+        }
+    }
+
+    public void reset(double startX, double startY) {
+        this.x = startX;
+        this.y = startY;
+        this.bdx = 0;
+        this.bdy = 0;
+        this.ballAngle = 0;
+    }
+}
+
+// ==========================================
+// 5. CLASS: Goal
+// ==========================================
+class Goal {
+    private int x, y, width, height;
+    private boolean isLeftGoal;
+
+    public Goal(int x, int y, int width, int height, boolean isLeftGoal) {
+        this.x = x;
+        this.y = y;
+        this.width = width;
+        this.height = height;
+        this.isLeftGoal = isLeftGoal;
+    }
+
+    public void draw(Graphics g) {
+        g.setColor(new Color(200, 200, 200, 150));
+        g.fillRect(x, y, width, height);
+        g.setColor(Color.WHITE);
+        if (isLeftGoal) {
+            g.fillRect(x + width, y, 5, height);
+            g.fillRect(x, y, width, 5);
+        } else {
+            g.fillRect(x - 5, y, 5, height);
+            g.fillRect(x, y, width, 5);
+        }
+    }
+
+    public boolean checkGoal(Ball ball) {
+        if (isLeftGoal) {
+            return ball.getX() <= x + width && ball.getY() >= y;
+        } else {
+            return ball.getX() >= x - ball.width && ball.getY() >= y;
+        }
     }
 }
