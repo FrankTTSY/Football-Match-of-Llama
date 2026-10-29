@@ -199,7 +199,7 @@ public class FootballGame extends JPanel implements ActionListener, KeyListener 
 
             g.setFont(pixelFontSmall);
             g.setColor(Color.WHITE);
-            String restartText = "PRESS 'R' TO RETURN TO MENU";
+            String restartText = "PRESS 'R' RETURN TO MENU";
             int restartWidth = g.getFontMetrics().stringWidth(restartText);
             g.drawString(restartText, (WIDTH - restartWidth) / 2, HEIGHT / 2 + 30);
         }
