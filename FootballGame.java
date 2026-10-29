@@ -512,7 +512,7 @@ class Ball extends GameObject {
         }
 
         double distance = Math.sqrt(dx * dx + dy * dy);
-        double kickPower = 11.0;
+        double kickPower = 12.0;
 
         double normX = dx / distance;
         double normY = dy / distance;
@@ -550,9 +550,8 @@ class Ball extends GameObject {
     }
 }
 
-// ==========================================
 // 5. CLASS: Goal
-// ==========================================
+
 class Goal {
     private int x, y, width, height;
     private boolean isLeftGoal;
